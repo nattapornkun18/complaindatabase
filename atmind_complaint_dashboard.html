@@ -1,0 +1,345 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.dash{padding:1.5rem 0;font-family:var(--font-sans)}
+.top-bar{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:1.5rem;flex-wrap:wrap}
+.top-left h1{font-size:18px;font-weight:500;color:var(--text-primary);margin-bottom:2px}
+.top-left p{font-size:13px;color:var(--text-secondary)}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1.5rem}
+.kpi{background:var(--surface-1);border-radius:var(--radius);padding:.75rem 1rem}
+.kpi-label{font-size:11px;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
+.kpi-value{font-size:22px;font-weight:500;color:var(--text-primary);line-height:1}
+.kpi-sub{font-size:11px;color:var(--text-secondary);margin-top:3px}
+.hotel-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1.25rem}
+.htab{padding:5px 13px;border-radius:20px;border:0.5px solid var(--border);cursor:pointer;font-size:12px;color:var(--text-secondary);background:transparent;transition:all .15s}
+.htab:hover{background:var(--surface-1);border-color:var(--border-strong)}
+.htab.on{background:#185FA5;color:#fff;border-color:#185FA5}
+.body-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,320px);gap:16px}
+.panel{background:var(--surface-2);border:0.5px solid var(--border);border-radius:12px;padding:1.25rem}
+.panel-h{font-size:13px;font-weight:500;color:var(--text-secondary);margin-bottom:1rem}
+.bar-item{margin-bottom:10px}
+.bar-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+.bar-name{font-size:13px;color:var(--text-primary)}
+.bar-nums{font-size:12px;color:var(--text-secondary);white-space:nowrap}
+.track{width:100%;height:8px;background:var(--surface-0);border-radius:4px;overflow:hidden}
+.fill{height:100%;border-radius:4px;transition:width .5s ease}
+.fill-red{background:#E24B4A}
+.fill-amber{background:#EF9F27}
+.fill-blue{background:#378ADD}
+.sev-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:500;padding:2px 7px;border-radius:10px}
+.sev-h{background:#FCEBEB;color:#791F1F}
+.sev-m{background:#FAEEDA;color:#633806}
+.sev-l{background:#EAF3DE;color:#27500A}
+.quotes{display:flex;flex-direction:column;gap:10px}
+.q-card{background:var(--surface-1);border-radius:var(--radius);padding:.75rem 1rem;border-left:3px solid #e24b4a}
+.q-card.amber{border-left-color:#EF9F27}
+.q-text{font-size:12px;color:var(--text-primary);line-height:1.6;margin-bottom:6px}
+.q-meta{display:flex;align-items:center;justify-content:space-between}
+.q-hotel{font-size:11px;color:var(--text-secondary)}
+.alert-box{background:#FCEBEB;border:0.5px solid #F09595;border-radius:var(--radius);padding:.75rem 1rem;margin-top:1rem}
+.alert-box.amber{background:#FAEEDA;border-color:#FAC775}
+.alert-title{font-size:12px;font-weight:500;color:#791F1F;margin-bottom:2px}
+.alert-box.amber .alert-title{color:#633806}
+.alert-body{font-size:12px;color:#A32D2D;line-height:1.5}
+.alert-box.amber .alert-body{color:#854F0B}
+.filter-row{display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap}
+.fchip{padding:4px 10px;border-radius:12px;border:0.5px solid var(--border);cursor:pointer;font-size:11px;color:var(--text-secondary);background:transparent}
+.fchip.on{border-color:#185FA5;color:#185FA5;background:#E6F1FB}
+.empty-state{text-align:center;padding:2rem;color:var(--text-muted);font-size:13px}
+@media(max-width:580px){.body-grid{grid-template-columns:1fr}.kpi-row{grid-template-columns:repeat(2,1fr)}}
+</style>
+
+<div class="dash">
+<h2 class="sr-only">AtMind Group complaint dashboard — 420 reviews across 7 hotels, January–June 2026</h2>
+
+<div class="top-bar">
+  <div class="top-left">
+    <h1>Complaint dashboard</h1>
+    <p>AtMind Group · 420 รีวิว · ม.ค.–มิ.ย. 2569</p>
+  </div>
+</div>
+
+<div class="kpi-row" id="kpi-row"></div>
+
+<div class="hotel-tabs" id="hotel-tabs"></div>
+
+<div class="filter-row" id="filter-row"></div>
+
+<div class="body-grid">
+  <div>
+    <div class="panel">
+      <div class="panel-h">ปัญหาที่พบบ่อย</div>
+      <div id="bar-list"></div>
+    </div>
+    <div id="alert-area" style="margin-top:12px"></div>
+  </div>
+  <div class="panel">
+    <div class="panel-h">ตัวอย่างรีวิวจริง</div>
+    <div class="quotes" id="quote-list"></div>
+  </div>
+</div>
+</div>
+
+<script>
+const DATA = {
+  all:{
+    total:420,reviews_with_text:351,negative_pct:55,
+    kpi:{hotels:7,sources:"Booking / Agoda / Google / Trip.com",period:"ม.ค.–มิ.ย. 2569"},
+    cats:[
+      {name:"การบริการ / พนักงาน",n:190,pct:45,sev:"h",color:"red"},
+      {name:"ราคา / ไม่คุ้มค่า",n:145,pct:35,sev:"m",color:"amber"},
+      {name:"เสียงรบกวน",n:130,pct:31,sev:"h",color:"red"},
+      {name:"ความสะอาด",n:112,pct:27,sev:"m",color:"amber"},
+      {name:"สระว่ายน้ำปิดไม่แจ้ง",n:90,pct:21,sev:"h",color:"red"},
+      {name:"แอร์ (กลิ่น/เสียง/ไม่เย็น)",n:79,pct:19,sev:"m",color:"amber"},
+      {name:"ห้องเล็ก / เตียงไม่ดี",n:70,pct:17,sev:"m",color:"amber"},
+      {name:"อาหารเช้า",n:62,pct:15,sev:"l",color:"blue"},
+      {name:"แมลง / สัตว์รบกวน",n:50,pct:12,sev:"h",color:"red"},
+      {name:"ห้องน้ำ (ระบาย/กลิ่น)",n:45,pct:11,sev:"m",color:"amber"},
+      {name:"การโกง / เงินหาย",n:22,pct:5,sev:"h",color:"red"},
+    ],
+    alerts:[{type:"red",title:"ปัญหาร้ายแรงที่สุดในกลุ่ม",body:"เงินหายจากตู้เซฟ (Amber Pattaya) + สระปิดไม่แจ้ง 6 เดือน (Amber Sukhumvit) + เสียงคลับตลอดคืน (The Grass) — ต้องดำเนินการทันที"}],
+    quotes:[
+      {text:"เงินหายจากตู้เซฟ 10,000 บาทใน 3 วัน ตู้เซฟปิดอยู่ตลอด มีแค่พนักงานที่เข้าได้",hotel:"Amber Pattaya",sev:"h"},
+      {text:"สระปิดมาตั้งแต่ม.ค. (เกือบครึ่งปี) ไม่มีการแจ้งเตือนใดๆ เลือกโรงแรมนี้เพราะต้องการสระโดยเฉพาะ",hotel:"Amber Sukhumvit",sev:"h"},
+      {text:"Please do not believe the rating. The music from the club next door is unbearable all night. Staff laugh in your face.",hotel:"The Grass",sev:"h"},
+      {text:"Service is lazy and they ask for a 5-star review at checkout. It's not 5 stars — service is less than 3.",hotel:"Arbour",sev:"m"},
+      {text:"ห้องพักมีกลิ่นเชื้อรา อยู่ 5 คืนจมูกไม่สบายทุกวัน พนักงาน front desk ผู้ชายไม่ยอมย้ายห้องให้",hotel:"Amber Sukhumvit",sev:"m"},
+    ]
+  },
+  "amber-p":{
+    total:63,reviews_with_text:47,negative_pct:52,
+    cats:[
+      {name:"บริการ / reception หยาบคาย",n:30,pct:48,sev:"h",color:"red"},
+      {name:"ราคาแพงเกินมูลค่า",n:24,pct:38,sev:"m",color:"amber"},
+      {name:"แมลง (ยุง/มด/แมลงสาบ)",n:20,pct:32,sev:"h",color:"red"},
+      {name:"เสียงรบกวน",n:16,pct:25,sev:"m",color:"amber"},
+      {name:"แอร์รั่ว / กลิ่น",n:13,pct:21,sev:"m",color:"amber"},
+      {name:"ห้องเล็ก / เตียงนิ่ม",n:12,pct:19,sev:"m",color:"amber"},
+      {name:"การโกง / เงินหายจากห้อง",n:8,pct:13,sev:"h",color:"red"},
+      {name:"ความสะอาด",n:8,pct:13,sev:"m",color:"amber"},
+    ],
+    alerts:[
+      {type:"red",title:"ร้ายแรง — ต้องสอบสวนทันที",body:"มีหลายรีวิวอิสระระบุว่าเงินหายจากตู้เซฟ 5,000–10,000 บาท และพนักงานเข้าห้องตี 3 โดยไม่เคาะประตู"},
+    ],
+    quotes:[
+      {text:"STEALING MONEY!!! Over 3 days, 10,000 baht disappeared from the safe. It was 100% closed every time we left. Hotel staff is the only explanation.",hotel:"Amber Pattaya · Booking.com",sev:"h"},
+      {text:"A hotel worker attempted to enter our room 'to give us water' at 3am without knocking. No action was taken after we complained.",hotel:"Amber Pattaya · Agoda",sev:"h"},
+      {text:"Our room had a serious pest problem. At 4AM we were still awake from mosquito bites. We checked out after just one night.",hotel:"Amber Pattaya · Agoda",sev:"h"},
+      {text:"Staff at reception is unfriendly and borderline rude. Room service took a long time and the chicken was bad. Got sick from the AC.",hotel:"Amber Pattaya · Booking.com",sev:"m"},
+    ]
+  },
+  "amber-s":{
+    total:66,reviews_with_text:58,negative_pct:48,
+    cats:[
+      {name:"สระปิด 6+ เดือน ไม่แจ้งล่วงหน้า",n:36,pct:55,sev:"h",color:"red"},
+      {name:"เสียงรบกวน / กำแพงบาง",n:23,pct:35,sev:"h",color:"red"},
+      {name:"ห้องมีกลิ่นรา / ความชื้น",n:20,pct:30,sev:"h",color:"red"},
+      {name:"แอร์ (กลิ่น/เสียง/ไม่เย็น)",n:18,pct:27,sev:"m",color:"amber"},
+      {name:"ไกล BTS",n:16,pct:24,sev:"l",color:"blue"},
+      {name:"ห้องน้ำ (แคบ/ระบายช้า)",n:14,pct:21,sev:"m",color:"amber"},
+      {name:"อาหารเช้า (จัดการแย่)",n:12,pct:18,sev:"m",color:"amber"},
+      {name:"แมลง (มด/แมลงสาบ)",n:9,pct:14,sev:"m",color:"amber"},
+    ],
+    alerts:[
+      {type:"red",title:"วิกฤต — สระปิดแต่ไม่แจ้งลูกค้า",body:"55% ของรีวิวร้องเรียนเรื่องนี้ โรงแรมปฏิเสธความรับผิดชอบโดยโทษว่าเว็บจองไม่อัปเดต ลูกค้าหลายรายขอ refund ทันที"},
+    ],
+    quotes:[
+      {text:"住宿當天才告知泳池自1月起已無提供使用 旅館說是訂房網沒更新的問題 旅館方沒有責任 (มาถึงวันเช็คอินถึงรู้ว่าสระปิดตั้งแต่ม.ค. โรงแรมโทษเว็บจองและปฏิเสธความรับผิดชอบ)",hotel:"Amber Sukhumvit · Agoda",sev:"h"},
+      {text:"Pool not working since January (almost 6 months). Not a single word about it anywhere. I specifically chose this hotel for the pool.",hotel:"Amber Sukhumvit · Google",sev:"h"},
+      {text:"ห้องมีกลิ่นเชื้อราทันทีที่เปิดประตู อยู่ 5 คืนจมูกไม่สบายทุกวัน พนักงาน front desk ผู้ชายไม่ยอมย้ายห้องให้จนบอกเรื่องกลิ่นซ้ำหลายครั้ง",hotel:"Amber Sukhumvit · Agoda",sev:"h"},
+      {text:"ไม่เคยเจอห้องที่กันเสียงแย่ขนาดนี้ในชีวิต บางเหมือนกระดาษ เสียงห้องข้างๆ ดังมากปิดประตูก็ยังได้ยิน",hotel:"Amber Sukhumvit · Trip.com",sev:"m"},
+    ]
+  },
+  arbour:{
+    total:107,reviews_with_text:86,negative_pct:61,
+    cats:[
+      {name:"บริการต่ำกว่ามาตรฐาน 5 ดาว",n:58,pct:54,sev:"h",color:"red"},
+      {name:"ราคาแพง / ไม่คุ้มค่า",n:44,pct:41,sev:"m",color:"amber"},
+      {name:"อาหารเช้า (ต้องจองล่วงหน้า/ตัวเลือกน้อย)",n:32,pct:30,sev:"m",color:"amber"},
+      {name:"ความสะอาด / กลิ่น",n:28,pct:26,sev:"m",color:"amber"},
+      {name:"เสียงรบกวน",n:24,pct:22,sev:"m",color:"amber"},
+      {name:"cancel ไม่ได้ / โกงเงิน",n:16,pct:15,sev:"h",color:"red"},
+      {name:"แอร์ฟิตเนส / ห้องร้อน",n:14,pct:13,sev:"m",color:"amber"},
+      {name:"แมลงสาบ / แมลง",n:10,pct:9,sev:"h",color:"red"},
+      {name:"ขอ 5-star review ตอน check-out",n:8,pct:7,sev:"m",color:"amber"},
+    ],
+    alerts:[
+      {type:"red",title:"ร้ายแรง — การบุกเข้าห้องและเรียกเก็บเงินไม่ยุติธรรม",body:"มีรีวิวจากลูกค้าจีนระบุว่าโรงแรมบุกเข้าห้องเพื่อ 'เก็บหลักฐาน' และเรียกเก็บเงินโดยไม่ยุติธรรม"},
+      {type:"amber",title:"ภาพลักษณ์ 5 ดาว ≠ ความเป็นจริง",body:"54% ของรีวิวโต้แย้งเรท 5 ดาว การขอรีวิว 5 ดาวตอน checkout ยิ่งทำให้ลูกค้ารู้สึกไม่ดี"},
+    ],
+    quotes:[
+      {text:"Service is lazy and they ask separately for 5-star review when checking out. It's not 5 stars — service is less than 3.",hotel:"Arbour · Trip.com",sev:"h"},
+      {text:"Purely Aesthetic, Zero Functionality: A Photo Studio, Not a Hotel. My 3-day stay was a complete failure.",hotel:"Arbour · Agoda",sev:"h"},
+      {text:"強制搶錢一直找理由還沖門進房想取證 (บังคับเก็บเงิน แล้วบุกเข้าห้องเพื่อเก็บหลักฐาน)",hotel:"Arbour · Google",sev:"h"},
+      {text:"สั่งอาหารรอบ 2 ไม่ได้รับอะไรเลย ขณะที่โต๊ะข้างๆ มีอาหารมาตลอด แยมหมดแจ้งไป 3 รอบไม่เติม",hotel:"Arbour · Google",sev:"m"},
+    ]
+  },
+  grass:{
+    total:101,reviews_with_text:93,negative_pct:68,
+    cats:[
+      {name:"เสียงดัง (คลับ/รถ/เพื่อนบ้าน)",n:73,pct:72,sev:"h",color:"red"},
+      {name:"ราคาแพง / ไม่คุ้มค่า",n:54,pct:53,sev:"m",color:"amber"},
+      {name:"การบริการ / พนักงานหยาบคาย",n:47,pct:46,sev:"h",color:"red"},
+      {name:"กลิ่นบุหรี่ / สารเสพติด",n:38,pct:38,sev:"h",color:"red"},
+      {name:"ความสะอาด / กลิ่นอับ",n:31,pct:31,sev:"m",color:"amber"},
+      {name:"ระบบน้ำ (ไหลช้า/น้ำเย็น)",n:27,pct:27,sev:"m",color:"amber"},
+      {name:"เตียง (เดี่ยวมาต่อ ≠ King จริง)",n:18,pct:18,sev:"m",color:"amber"},
+      {name:"โกง / เรียกเก็บเงินเพิ่ม",n:14,pct:14,sev:"h",color:"red"},
+      {name:"ที่จอดรถ (ไกล/ถูกล็อค)",n:11,pct:11,sev:"m",color:"amber"},
+    ],
+    alerts:[
+      {type:"red",title:"วิกฤตเชิงโครงสร้าง — เสียงดัง 72%",body:"คลับอยู่ติดอาคาร เสียงดังถึงตี 3 ทุกคืน ลูกค้าหลายรายต้อง check out ก่อนกำหนด — ไม่สามารถแก้ได้ชั่วคราว ต้องลงทุนกันเสียงจริงจัง"},
+    ],
+    quotes:[
+      {text:"Had to leave after the first night due to extremely loud road noise — it genuinely felt like trying to sleep on a highway.",hotel:"The Grass · Booking.com",sev:"h"},
+      {text:"The music from the club next door is unbearable. It doesn't matter what room. Staff laugh in your face like you're the idiot for choosing this hotel.",hotel:"The Grass · Google",sev:"h"},
+      {text:"感覺像睡在天橋上，摩托車從耳邊過 (เหมือนนอนอยู่บนสะพานลอย เสียงมอไซค์วิ่งผ่านหูตลอดเวลา)",hotel:"The Grass · Ctrip",sev:"h"},
+      {text:"They tried to charge extra for everything. The room they gave us wasn't the king size I booked — just two single beds pushed together.",hotel:"The Grass · Trip.com",sev:"m"},
+    ]
+  },
+  arden:{
+    total:26,reviews_with_text:24,negative_pct:54,
+    cats:[
+      {name:"ห้องน้ำ (กลิ่น/แมลงสาบ/ระบบน้ำ)",n:11,pct:42,sev:"h",color:"red"},
+      {name:"เสียงรบกวน (มอเตอร์ไซค์ตลอดคืน)",n:9,pct:35,sev:"h",color:"red"},
+      {name:"Front desk / บริการไม่ยืดหยุ่น",n:8,pct:31,sev:"m",color:"amber"},
+      {name:"ห้องเล็ก / ห้องไม่ตรงที่จอง",n:6,pct:23,sev:"m",color:"amber"},
+      {name:"อาหารเช้า (เมนูซ้ำ)",n:5,pct:19,sev:"l",color:"blue"},
+      {name:"ทำเลไกล",n:5,pct:19,sev:"l",color:"blue"},
+      {name:"แอร์ไม่ทำงาน",n:4,pct:15,sev:"h",color:"red"},
+    ],
+    alerts:[
+      {type:"amber",title:"ข้อมูลจำกัด (26 รีวิว)",body:"สรุปเบื้องต้น แต่ปัญหาห้องน้ำมีแมลงสาบและ front desk ไม่ยืดหยุ่นเรื่องจองผิดเป็นเรื่องที่ควรติดตาม"},
+    ],
+    quotes:[
+      {text:"I saw cockroaches in the room twice. Pest control didn't help at all. I told my friend who was planning to join me to go to a different hotel.",hotel:"Arden · Booking.com",sev:"h"},
+      {text:"凌晨三點多訂的房過來說沒查到，不退款，叫我們大廳等超過一小時才進房 隔音差得像沒有玻璃ลเลย (จองตี 3 บอกไม่พบห้อง ไม่คืนเงิน ให้รอนาน ห้องเสียงดังมาก)",hotel:"Arden · Ctrip",sev:"h"},
+      {text:"Street noise from motorcycles is absolutely non-stop all night till morning. Avoid rooms facing the street.",hotel:"Arden · Booking.com",sev:"m"},
+    ]
+  },
+  altera:{
+    total:37,reviews_with_text:27,negative_pct:44,
+    cats:[
+      {name:"ความสะอาด (แม่บ้านไม่ทำความสะอาด)",n:11,pct:41,sev:"h",color:"red"},
+      {name:"พนักงาน reception ไม่เป็นมิตร",n:9,pct:33,sev:"h",color:"red"},
+      {name:"ห้องเก่า / อุปกรณ์ชำรุด",n:8,pct:30,sev:"m",color:"amber"},
+      {name:"แอร์ไม่เย็น / เก่า",n:7,pct:26,sev:"m",color:"amber"},
+      {name:"ห้องน้ำ (ระบาย/กลิ่น)",n:6,pct:22,sev:"m",color:"amber"},
+      {name:"เสียงรบกวน",n:5,pct:19,sev:"m",color:"amber"},
+      {name:"แมลง (ยุง/แมลงวัน)",n:4,pct:15,sev:"m",color:"amber"},
+    ],
+    alerts:[
+      {type:"amber",title:"ข้อมูลจำกัด (37 รีวิว)",body:"แต่แม่บ้านไม่ทำความสะอาดและ reception หยาบคายเป็นรูปแบบชัดเจน ควรตรวจสอบมาตรฐาน housekeeping"},
+    ],
+    quotes:[
+      {text:"住了3晚，廁所及客廳沒補衛生紙、桌面地上整個住宿期間都沒有清潔！連基本清潔都沒有做！ (3 คืนไม่เติมทิชชู ไม่ทำความสะอาดโต๊ะและพื้นห้องเลย)",hotel:"Altera · Google",sev:"h"},
+      {text:"청소 펫말을 걸어두어도 청소가 안되어 있어서 언제나 외출할 때 방청소를 부탁해야 하는 번거로움 (แขวนป้าย 'ขอทำความสะอาด' แต่ก็ยังไม่ทำ ต้องไปขอที่ reception ทุกครั้ง)",hotel:"Altera · Agoda",sev:"m"},
+      {text:"Staff receptionist on duty at night — really bad, talking too rude.",hotel:"Altera · Agoda",sev:"h"},
+    ]
+  },
+  aster:{
+    total:20,reviews_with_text:16,negative_pct:38,
+    cats:[
+      {name:"ความสะอาด (ห้อง/เตียง/พื้น)",n:8,pct:50,sev:"h",color:"red"},
+      {name:"ระบบน้ำ (สนิม/ระบายช้า)",n:6,pct:38,sev:"m",color:"amber"},
+      {name:"ราคาแพงเกินมูลค่า",n:5,pct:31,sev:"m",color:"amber"},
+      {name:"เสียงรบกวน (ถนน)",n:4,pct:25,sev:"m",color:"amber"},
+      {name:"อาหารเช้าคุณภาพต่ำ",n:3,pct:19,sev:"l",color:"blue"},
+      {name:"พนักงาน ไม่ยืดหยุ่น",n:2,pct:13,sev:"l",color:"blue"},
+    ],
+    alerts:[
+      {type:"amber",title:"ข้อมูลจำกัด (20 รีวิว)",body:"แต่ความสะอาด 50% และน้ำสนิม 38% เป็นสัญญาณที่ควรตรวจสอบมาตรฐาน housekeeping"},
+    ],
+    quotes:[
+      {text:"一入住床上有污漬、床頭櫃還有之前房客的假睫毛、地板有髒污、電磁爐超髒，連住三晚，都打掃不乾淨 (เจอรอยเปื้อนบนเตียง + ขนตาปลอมของแขกคนก่อน + เตาไฟฟ้าสกปรกมาก อยู่ 3 คืนไม่ได้รับการทำความสะอาดเลย)",hotel:"Aster · Trip.com",sev:"h"},
+      {text:"น้ำสนิมออกมาตอนเปิดก๊อก ต้องรอนานกว่าจะได้น้ำสะอาด (녹물이 나와서 한참 틀고나서야 깨끗한물이 나왔습니다)",hotel:"Aster · Trip.com",sev:"m"},
+      {text:"Couldn't cancel even though I was unhappy — they wouldn't refund even the breakfast charge.",hotel:"Aster · Expedia",sev:"m"},
+    ]
+  }
+};
+
+const HOTELS = [
+  {id:"all",label:"ทุกโรงแรม"},
+  {id:"amber-p",label:"Amber Pattaya"},
+  {id:"amber-s",label:"Amber Sukhumvit"},
+  {id:"arbour",label:"Arbour"},
+  {id:"grass",label:"The Grass"},
+  {id:"arden",label:"Arden"},
+  {id:"altera",label:"Altera"},
+  {id:"aster",label:"Aster"},
+];
+
+const SEV_FILTERS = [
+  {id:"all",label:"ทั้งหมด"},
+  {id:"h",label:"ร้ายแรง"},
+  {id:"m",label:"ปานกลาง"},
+  {id:"l",label:"ทั่วไป"},
+];
+
+let currentHotel = "all";
+let currentSev = "all";
+
+function sevLabel(s){return s==="h"?"ร้ายแรง":s==="m"?"ปานกลาง":"ทั่วไป"}
+function sevClass(s){return s==="h"?"sev-h":s==="m"?"sev-m":"sev-l"}
+
+function buildKpi(){
+  const d = DATA[currentHotel];
+  const kpiDefs = currentHotel === "all"
+    ? [{label:"รีวิวทั้งหมด",value:d.total,sub:"8 โรงแรม"},{label:"มีข้อความ",value:d.reviews_with_text,sub:"รีวิวที่ระบุปัญหา"},{label:"Negative",value:d.negative_pct+"%",sub:"จัดประเภทเชิงลบ"},{label:"แหล่งที่มา",value:"6",sub:"Booking/Agoda/Google..."}]
+    : [{label:"รีวิวทั้งหมด",value:d.total,sub:"โรงแรมนี้"},{label:"มีข้อความ",value:d.reviews_with_text,sub:"รีวิวที่ระบุปัญหา"},{label:"Negative",value:d.negative_pct+"%",sub:"จัดประเภทเชิงลบ"},{label:"หมวดปัญหา",value:d.cats.length,sub:"ประเภทที่พบ"}];
+  document.getElementById("kpi-row").innerHTML = kpiDefs.map(k=>`<div class="kpi"><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div><div class="kpi-sub">${k.sub}</div></div>`).join("");
+}
+
+function buildTabs(){
+  document.getElementById("hotel-tabs").innerHTML = HOTELS.map(h=>`<div class="htab${h.id===currentHotel?" on":""}" onclick="switchHotel('${h.id}')">${h.label}</div>`).join("");
+}
+
+function buildFilters(){
+  document.getElementById("filter-row").innerHTML = SEV_FILTERS.map(f=>`<div class="fchip${f.id===currentSev?" on":""}" onclick="switchSev('${f.id}')">${f.label}</div>`).join("");
+}
+
+function buildBars(){
+  const d = DATA[currentHotel];
+  const cats = currentSev==="all" ? d.cats : d.cats.filter(c=>c.sev===currentSev);
+  if(!cats.length){document.getElementById("bar-list").innerHTML=`<div class="empty-state">ไม่มีข้อมูลในหมวดนี้</div>`;return;}
+  document.getElementById("bar-list").innerHTML = cats.map(c=>`
+    <div class="bar-item">
+      <div class="bar-top">
+        <span class="bar-name">${c.name}</span>
+        <span class="bar-nums"><span class="sev-badge ${sevClass(c.sev)}">${sevLabel(c.sev)}</span>&nbsp;${c.n} รีวิว · ${c.pct}%</span>
+      </div>
+      <div class="track"><div class="fill fill-${c.color}" style="width:${c.pct}%"></div></div>
+    </div>`).join("");
+}
+
+function buildAlerts(){
+  const d = DATA[currentHotel];
+  document.getElementById("alert-area").innerHTML = d.alerts.map(a=>`
+    <div class="alert-box ${a.type==="amber"?"amber":""}">
+      <div class="alert-title">${a.title}</div>
+      <div class="alert-body">${a.body}</div>
+    </div>`).join("");
+}
+
+function buildQuotes(){
+  const d = DATA[currentHotel];
+  const qs = currentSev==="all" ? d.quotes : d.quotes.filter(q=>q.sev===currentSev);
+  if(!qs.length){document.getElementById("quote-list").innerHTML=`<div class="empty-state">ไม่มีรีวิวในหมวดนี้</div>`;return;}
+  document.getElementById("quote-list").innerHTML = qs.map(q=>`
+    <div class="q-card ${q.sev==="m"?"amber":""}">
+      <div class="q-text">"${q.text}"</div>
+      <div class="q-meta">
+        <span class="q-hotel">${q.hotel}</span>
+        <span class="sev-badge ${sevClass(q.sev)}">${sevLabel(q.sev)}</span>
+      </div>
+    </div>`).join("");
+}
+
+function render(){buildKpi();buildTabs();buildFilters();buildBars();buildAlerts();buildQuotes();}
+
+function switchHotel(id){currentHotel=id;currentSev="all";render();}
+function switchSev(id){currentSev=id;buildFilters();buildBars();buildQuotes();}
+
+render();
+</script>
